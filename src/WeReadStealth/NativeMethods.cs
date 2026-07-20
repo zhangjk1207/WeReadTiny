@@ -5,6 +5,7 @@ namespace WeReadStealth
 {
     internal static class NativeMethods
     {
+        internal const int WsThickFrame = 0x00040000;
         internal const int WmHotkey = 0x0312;
         internal const int WmNcHitTest = 0x0084;
         internal const int WmNcLButtonDown = 0x00A1;
@@ -46,5 +47,13 @@ namespace WeReadStealth
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool DestroyIcon(IntPtr iconHandle);
+    }
+
+    internal static class WindowStyles
+    {
+        internal static int AddResizable(int style)
+        {
+            return style | NativeMethods.WsThickFrame;
+        }
     }
 }

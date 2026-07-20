@@ -229,6 +229,16 @@ namespace WeReadStealth
             RebuildTrayMenu();
         }
 
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams parameters = base.CreateParams;
+                parameters.Style = WindowStyles.AddResizable(parameters.Style);
+                return parameters;
+            }
+        }
+
         protected override void WndProc(ref Message message)
         {
             if (_hotkeyManager != null && _hotkeyManager.TryGetHotkey(message, out AppHotkey hotkey))

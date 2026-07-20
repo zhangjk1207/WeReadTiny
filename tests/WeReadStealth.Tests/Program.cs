@@ -13,6 +13,7 @@ internal static class Program
             Directory.CreateDirectory(testDirectory);
             TestDefaults();
             TestNormalization();
+            TestResizableWindowStyle();
             TestRoundTrip(testDirectory);
             TestCorruptFileRecovery(testDirectory);
             Console.WriteLine("All settings tests passed.");
@@ -88,6 +89,12 @@ internal static class Program
         AssertEqual(expected.Opacity, actual.Opacity, "saved opacity");
         AssertEqual(expected.AlwaysOnTop, actual.AlwaysOnTop, "saved top-most state");
         AssertEqual(expected.Theme, actual.Theme, "saved theme");
+    }
+
+    private static void TestResizableWindowStyle()
+    {
+        int style = WindowStyles.AddResizable(0);
+        AssertEqual(NativeMethods.WsThickFrame, style & NativeMethods.WsThickFrame, "resizable window style");
     }
 
     private static void TestCorruptFileRecovery(string testDirectory)

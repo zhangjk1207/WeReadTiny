@@ -10,7 +10,7 @@
     <Prefer32Bit>false</Prefer32Bit>
     <RootNamespace>WeReadStealth</RootNamespace>
     <AssemblyName>WeReadStealth</AssemblyName>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <Authors>zjkstudy</Authors>
     <Description>A compact Windows client for WeRead powered by the system WebView2 runtime.</Description>
     <Copyright>Copyright © 2026 zjkstudy</Copyright>
