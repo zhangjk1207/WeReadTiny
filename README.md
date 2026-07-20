@@ -1,6 +1,6 @@
 # WeRead Stealth
 
-一个轻量、非官方的微信读书 Windows 紧凑窗口，使用 WinForms 和系统 WebView2 Runtime 构建。
+一个轻量、非官方的微信读书 Windows 第三方客户端，专为上班摸鱼看书设计：通过紧凑、置顶、透明度可调的小窗口，方便在工作间隙随时打开阅读。使用 WinForms 和系统 WebView2 Runtime 构建。
 
 > 本项目与腾讯、微信或微信读书没有隶属、授权或合作关系。微信读书名称及相关商标归其权利人所有。
 
