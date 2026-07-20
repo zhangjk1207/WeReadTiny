@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+bin/
+obj/
+publish/
+.build/
+TestResults/
+*.user
+*.suo
+*.pfx
+*.snk
+
+# Electron
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Legacy Electron/npm output
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local implementation plans
+docs/superpowers/

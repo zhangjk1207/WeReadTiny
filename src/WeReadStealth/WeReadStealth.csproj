@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Prefer32Bit>false</Prefer32Bit>
+    <RootNamespace>WeReadStealth</RootNamespace>
+    <AssemblyName>WeReadStealth</AssemblyName>
+    <Version>2.0.0</Version>
+    <Authors>zjkstudy</Authors>
+    <Description>A compact Windows client for WeRead powered by the system WebView2 runtime.</Description>
+    <Copyright>Copyright © 2026 zjkstudy</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <ApplicationIcon Condition="Exists('Assets\icon.ico')">Assets\icon.ico</ApplicationIcon>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AppSettings.cs" />
+    <Compile Include="HotkeyManager.cs" />
+    <Compile Include="MainForm.cs" />
+    <Compile Include="NativeMethods.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="SettingsStore.cs" />
+    <Compile Include="UiTheme.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>
