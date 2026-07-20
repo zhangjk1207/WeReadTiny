@@ -21,6 +21,7 @@ namespace WeReadStealth
         private readonly AppSettings _settings;
         private readonly WebView2 _webView;
         private readonly Panel _controlBar;
+        private readonly Panel _scrollbarMask;
         private readonly Label _titleLabel;
         private readonly Button _themeButton;
         private readonly Button _pinButton;
@@ -34,12 +35,14 @@ namespace WeReadStealth
         private readonly NotifyIcon _trayIcon;
         private readonly ContextMenuStrip _trayMenu;
         private readonly Timer _saveTimer;
+        private readonly Timer _toolbarTimer;
         private readonly ToolTip _toolTip;
 
         private HotkeyManager _hotkeyManager;
         private Icon _applicationIcon;
         private bool _exitRequested;
         private bool _webViewReady;
+        private DateTime _lastToolbarInteractionUtc;
 
         internal MainForm(SettingsStore settingsStore)
         {
@@ -82,6 +85,12 @@ namespace WeReadStealth
                 Padding = new Padding(6, 2, 2, 2)
             };
 
+            _scrollbarMask = new Panel
+            {
+                BackColor = _settings.Theme == "dark" ? UiTheme.Dark.Background : UiTheme.Light.Background,
+                TabStop = false
+            };
+
             TableLayoutPanel toolbarLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -93,7 +102,7 @@ namespace WeReadStealth
             toolbarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             toolbarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 32));
             toolbarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 32));
-            toolbarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 104));
+            toolbarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
             toolbarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 32));
             toolbarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 32));
             toolbarLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -113,7 +122,17 @@ namespace WeReadStealth
             _hideButton = CreateToolbarButton("−", "隐藏 (Ctrl+Shift+W)", "隐藏到系统托盘");
             _closeButton = CreateToolbarButton("×", "关闭到托盘 (Ctrl+Shift+B)", "关闭按钮会将窗口隐藏到系统托盘");
 
-            Panel opacityPanel = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
+            TableLayoutPanel opacityPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty
+            };
+            opacityPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            opacityPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 52));
+            opacityPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             _opacitySlider = new TrackBar
             {
                 Minimum = 30,
@@ -122,25 +141,22 @@ namespace WeReadStealth
                 SmallChange = 2,
                 LargeChange = 10,
                 Value = (int)Math.Round(_settings.Opacity * 100),
-                Width = 68,
-                Height = 30,
-                Location = new Point(0, 1),
-                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 2, 0, 0)
             };
             _opacityLabel = new Label
             {
-                AutoSize = false,
-                Width = 34,
-                Height = 30,
-                Location = new Point(69, 1),
+                Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Text = _opacitySlider.Value + "%",
-                Font = new Font("Segoe UI", 8F)
+                Font = new Font("Segoe UI", 8F),
+                Margin = Padding.Empty
             };
-            opacityPanel.Controls.Add(_opacitySlider);
-            opacityPanel.Controls.Add(_opacityLabel);
+            opacityPanel.Controls.Add(_opacitySlider, 0, 0);
+            opacityPanel.Controls.Add(_opacityLabel, 1, 0);
             _toolTip.SetToolTip(opacityPanel, "调整整个窗口透明度");
             _toolTip.SetToolTip(_opacitySlider, "调整整个窗口透明度");
+            _toolTip.SetToolTip(_opacityLabel, "调整整个窗口透明度");
 
             toolbarLayout.Controls.Add(_titleLabel, 0, 0);
             toolbarLayout.Controls.Add(_themeButton, 1, 0);
@@ -176,6 +192,8 @@ namespace WeReadStealth
             Controls.Add(_webView);
             Controls.Add(_errorPanel);
             Controls.Add(_controlBar);
+            Controls.Add(_scrollbarMask);
+            UpdateScrollbarMaskBounds();
 
             _trayMenu = new ContextMenuStrip();
             _trayIcon = new NotifyIcon
@@ -188,6 +206,10 @@ namespace WeReadStealth
 
             _saveTimer = new Timer { Interval = 400 };
             _saveTimer.Tick += SaveTimerOnTick;
+            _toolbarTimer = new Timer { Interval = 100 };
+            _toolbarTimer.Tick += ToolbarTimerOnTick;
+            _lastToolbarInteractionUtc = DateTime.UtcNow;
+            _toolbarTimer.Start();
 
             _themeButton.Click += delegate { ToggleTheme(); };
             _pinButton.Click += delegate { ToggleTopMost(); };
@@ -200,7 +222,11 @@ namespace WeReadStealth
             _controlBar.MouseDown += DragWindow;
 
             LocationChanged += delegate { ScheduleSettingsSave(); };
-            SizeChanged += delegate { ScheduleSettingsSave(); };
+            SizeChanged += delegate
+            {
+                UpdateScrollbarMaskBounds();
+                ScheduleSettingsSave();
+            };
             FormClosing += MainFormOnFormClosing;
             Shown += MainFormOnShown;
 
@@ -224,6 +250,8 @@ namespace WeReadStealth
 
             Show();
             WindowState = FormWindowState.Normal;
+            _lastToolbarInteractionUtc = DateTime.UtcNow;
+            SetToolbarVisible(true);
             Activate();
             NativeMethods.SetForegroundWindow(Handle);
             RebuildTrayMenu();
@@ -236,6 +264,16 @@ namespace WeReadStealth
                 CreateParams parameters = base.CreateParams;
                 parameters.Style = WindowStyles.AddResizable(parameters.Style);
                 return parameters;
+            }
+        }
+
+        protected override void OnHandleCreated(EventArgs eventArgs)
+        {
+            base.OnHandleCreated(eventArgs);
+            if (_settings != null)
+            {
+                UiTheme theme = _settings.Theme == "dark" ? UiTheme.Dark : UiTheme.Light;
+                ApplyWindowFrameTheme(theme);
             }
         }
 
@@ -272,6 +310,7 @@ namespace WeReadStealth
             if (disposing)
             {
                 _saveTimer?.Dispose();
+                _toolbarTimer?.Dispose();
                 _hotkeyManager?.Dispose();
                 _trayIcon.Visible = false;
                 _trayIcon.Dispose();
@@ -286,6 +325,7 @@ namespace WeReadStealth
 
         private async void MainFormOnShown(object sender, EventArgs eventArgs)
         {
+            _lastToolbarInteractionUtc = DateTime.UtcNow;
             _hotkeyManager = new HotkeyManager(Handle);
             IReadOnlyList<AppHotkey> conflicts = _hotkeyManager.RegisterDefaults();
             if (conflicts.Count > 0)
@@ -310,9 +350,12 @@ namespace WeReadStealth
                         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                         "WeReadStealth",
                         "WebView2");
-                    CoreWebView2Environment environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
+                    CoreWebView2Environment environment = await CoreWebView2Environment.CreateAsync(
+                        null,
+                        userDataFolder,
+                        WebViewEnvironment.CreateOptions());
                     await _webView.EnsureCoreWebView2Async(environment);
-                    ConfigureWebView();
+                    await ConfigureWebViewAsync();
                     _webViewReady = true;
                 }
 
@@ -328,7 +371,7 @@ namespace WeReadStealth
             }
         }
 
-        private void ConfigureWebView()
+        private async Task ConfigureWebViewAsync()
         {
             CoreWebView2Settings settings = _webView.CoreWebView2.Settings;
             settings.AreDevToolsEnabled = false;
@@ -336,7 +379,9 @@ namespace WeReadStealth
             settings.IsZoomControlEnabled = true;
             settings.AreDefaultScriptDialogsEnabled = true;
             settings.AreDefaultContextMenusEnabled = true;
-
+            settings.IsWebMessageEnabled = true;
+            await _webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(WebViewPageBridge.BackgroundWatcherScript);
+            _webView.CoreWebView2.WebMessageReceived += WebViewOnWebMessageReceived;
             _webView.CoreWebView2.NavigationStarting += delegate (object sender, CoreWebView2NavigationStartingEventArgs args)
             {
                 if (!IsSafeWebUri(args.Uri))
@@ -375,6 +420,24 @@ namespace WeReadStealth
             {
                 ShowError("网页进程意外退出，请点击重试。", true);
             };
+        }
+
+        private void WebViewOnWebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs eventArgs)
+        {
+            string message;
+            try
+            {
+                message = eventArgs.TryGetWebMessageAsString();
+            }
+            catch (ArgumentException)
+            {
+                return;
+            }
+
+            if (WebViewPageBridge.TryParseBackgroundMessage(message, out Color color))
+            {
+                _scrollbarMask.BackColor = color;
+            }
         }
 
         private void HandleHotkey(AppHotkey hotkey)
@@ -447,7 +510,87 @@ namespace WeReadStealth
             _settings.Opacity = _opacitySlider.Value / 100.0;
             Opacity = _settings.Opacity;
             _opacityLabel.Text = _opacitySlider.Value + "%";
+            RebuildTrayMenu();
             ScheduleSettingsSave();
+        }
+
+        private void SetOpacityPercent(int percentage)
+        {
+            int clamped = Math.Max(_opacitySlider.Minimum, Math.Min(_opacitySlider.Maximum, percentage));
+            _opacitySlider.Value = clamped;
+        }
+
+        private void ToggleToolbarAutoHide()
+        {
+            _settings.AutoHideToolbar = !_settings.AutoHideToolbar;
+            _lastToolbarInteractionUtc = DateTime.UtcNow;
+            SetToolbarVisible(true);
+            RebuildTrayMenu();
+            ScheduleSettingsSave();
+        }
+
+        private void ToolbarTimerOnTick(object sender, EventArgs eventArgs)
+        {
+            if (!Visible || WindowState == FormWindowState.Minimized)
+            {
+                return;
+            }
+
+            Point screenCursor = Cursor.Position;
+            Rectangle windowBounds = Bounds;
+            bool cursorInside = windowBounds.Contains(screenCursor);
+            int cursorY = screenCursor.Y - windowBounds.Top;
+            bool cursorInteracting = cursorInside
+                && cursorY >= 0
+                && (_controlBar.Visible
+                    ? cursorY <= ToolbarVisibilityPolicy.InteractionHeight
+                    : cursorY <= ToolbarVisibilityPolicy.RevealEdgeHeight);
+            if (_controlBar.ContainsFocus || cursorInteracting)
+            {
+                _lastToolbarInteractionUtc = DateTime.UtcNow;
+            }
+
+            TimeSpan timeSinceInteraction = DateTime.UtcNow - _lastToolbarInteractionUtc;
+            bool shouldShow = ToolbarVisibilityPolicy.ShouldShow(
+                _settings.AutoHideToolbar,
+                _controlBar.Visible,
+                cursorInside,
+                cursorY,
+                timeSinceInteraction);
+            SetToolbarVisible(shouldShow);
+        }
+
+        private void SetToolbarVisible(bool visible)
+        {
+            if (_controlBar.Visible == visible)
+            {
+                return;
+            }
+
+            _controlBar.Visible = visible;
+            if (visible)
+            {
+                _controlBar.BringToFront();
+            }
+
+            PerformLayout();
+            UpdateScrollbarMaskBounds();
+        }
+
+        private void UpdateScrollbarMaskBounds()
+        {
+            int top = _controlBar != null && _controlBar.Visible ? ControlBarHeight : 0;
+            int width = 12;
+            _scrollbarMask.Bounds = new Rectangle(
+                Math.Max(0, ClientSize.Width - width),
+                top,
+                width,
+                Math.Max(0, ClientSize.Height - top));
+            _scrollbarMask.BringToFront();
+            if (_controlBar != null && _controlBar.Visible)
+            {
+                _controlBar.BringToFront();
+            }
         }
 
         private void ApplyTheme()
@@ -473,6 +616,30 @@ namespace WeReadStealth
             _closeButton.ForeColor = theme.Danger;
             _retryButton.ForeColor = theme.Accent;
             BackColor = theme.Border;
+            _webView.DefaultBackgroundColor = theme.Background;
+            ApplyWindowFrameTheme(theme);
+        }
+
+        private void ApplyWindowFrameTheme(UiTheme theme)
+        {
+            if (!IsHandleCreated)
+            {
+                return;
+            }
+
+            int darkMode = _settings.Theme == "dark" ? 1 : 0;
+            NativeMethods.DwmSetWindowAttribute(
+                Handle,
+                NativeMethods.DwmwaUseImmersiveDarkMode,
+                ref darkMode,
+                sizeof(int));
+
+            int borderColor = NativeMethods.DwmColorNone;
+            NativeMethods.DwmSetWindowAttribute(
+                Handle,
+                NativeMethods.DwmwaBorderColor,
+                ref borderColor,
+                sizeof(int));
         }
 
         private void UpdatePinState()
@@ -497,6 +664,21 @@ namespace WeReadStealth
                 Checked = _settings.AlwaysOnTop
             };
             _trayMenu.Items.Add(topMostItem);
+            ToolStripMenuItem autoHideItem = new ToolStripMenuItem("自动隐藏工具栏", null, delegate { ToggleToolbarAutoHide(); })
+            {
+                Checked = _settings.AutoHideToolbar
+            };
+            _trayMenu.Items.Add(autoHideItem);
+            ToolStripMenuItem opacityMenu = new ToolStripMenuItem("透明度");
+            foreach (int percentage in new[] { 100, 80, 60, 40 })
+            {
+                int selectedPercentage = percentage;
+                opacityMenu.DropDownItems.Add(new ToolStripMenuItem(percentage + "%", null, delegate { SetOpacityPercent(selectedPercentage); })
+                {
+                    Checked = _opacitySlider.Value == percentage
+                });
+            }
+            _trayMenu.Items.Add(opacityMenu);
             _trayMenu.Items.Add(_settings.Theme == "dark" ? "浅色主题" : "深色主题", null, delegate { ToggleTheme(); });
             _trayMenu.Items.Add("返回微信读书首页", null, delegate
             {

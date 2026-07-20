@@ -13,6 +13,10 @@ internal static class Program
             Directory.CreateDirectory(testDirectory);
             TestDefaults();
             TestNormalization();
+            TestSettingsMigration();
+            TestToolbarVisibilityPolicy();
+            TestWebViewEnvironment();
+            TestWebViewPageBridge();
             TestResizableWindowStyle();
             TestRoundTrip(testDirectory);
             TestCorruptFileRecovery(testDirectory);
@@ -41,6 +45,8 @@ internal static class Program
         AssertEqual(1.0, settings.Opacity, "default opacity");
         AssertEqual(true, settings.AlwaysOnTop, "default top-most state");
         AssertEqual("light", settings.Theme, "default theme");
+        AssertEqual(true, settings.AutoHideToolbar, "default toolbar auto-hide");
+        AssertEqual(AppSettings.CurrentVersion, settings.Version, "default settings version");
     }
 
     private static void TestNormalization()
@@ -76,7 +82,9 @@ internal static class Program
             Height = 880,
             Opacity = 0.72,
             AlwaysOnTop = false,
-            Theme = "dark"
+            Theme = "dark",
+            AutoHideToolbar = false,
+            Version = AppSettings.CurrentVersion
         };
 
         store.Save(expected);
@@ -89,6 +97,57 @@ internal static class Program
         AssertEqual(expected.Opacity, actual.Opacity, "saved opacity");
         AssertEqual(expected.AlwaysOnTop, actual.AlwaysOnTop, "saved top-most state");
         AssertEqual(expected.Theme, actual.Theme, "saved theme");
+        AssertEqual(expected.AutoHideToolbar, actual.AutoHideToolbar, "saved toolbar auto-hide");
+        AssertEqual(expected.Version, actual.Version, "saved settings version");
+    }
+
+    private static void TestSettingsMigration()
+    {
+        AppSettings legacy = new AppSettings
+        {
+            Width = 400,
+            Height = 600,
+            Opacity = 1.0,
+            Theme = "dark"
+        };
+
+        legacy.Normalize();
+        AssertEqual(true, legacy.AutoHideToolbar, "legacy toolbar auto-hide migration");
+        AssertEqual(AppSettings.CurrentVersion, legacy.Version, "legacy settings version migration");
+
+        legacy.AutoHideToolbar = false;
+        legacy.Normalize();
+        AssertEqual(false, legacy.AutoHideToolbar, "explicit disabled toolbar auto-hide");
+    }
+
+    private static void TestToolbarVisibilityPolicy()
+    {
+        AssertEqual(true, ToolbarVisibilityPolicy.ShouldShow(false, false, false, 100, TimeSpan.FromSeconds(10)), "disabled auto-hide");
+        AssertEqual(true, ToolbarVisibilityPolicy.ShouldShow(true, true, false, 100, TimeSpan.FromMilliseconds(500)), "startup grace period");
+        AssertEqual(false, ToolbarVisibilityPolicy.ShouldShow(true, true, false, 100, TimeSpan.FromSeconds(2)), "hide after delay");
+        AssertEqual(true, ToolbarVisibilityPolicy.ShouldShow(true, false, true, 4, TimeSpan.FromSeconds(2)), "top-edge reveal");
+        AssertEqual(true, ToolbarVisibilityPolicy.ShouldShow(true, true, true, 30, TimeSpan.FromSeconds(2)), "toolbar hover retention");
+        AssertEqual(false, ToolbarVisibilityPolicy.ShouldShow(true, true, true, 80, TimeSpan.FromSeconds(2)), "hide below toolbar");
+    }
+
+    private static void TestWebViewEnvironment()
+    {
+        AssertEqual(
+            Microsoft.Web.WebView2.Core.CoreWebView2ScrollbarStyle.Default,
+            WebViewEnvironment.CreateOptions().ScrollBarStyle,
+            "WebView2 default scrollbar style");
+        AssertEqual(
+            "--hide-scrollbars",
+            WebViewEnvironment.CreateOptions().AdditionalBrowserArguments,
+            "WebView2 hidden scrollbar argument");
+    }
+
+    private static void TestWebViewPageBridge()
+    {
+        AssertEqual(true, WebViewPageBridge.TryParseBackgroundMessage("wrs-bg:#1d1d1d", out System.Drawing.Color dark), "valid page background message");
+        AssertEqual(System.Drawing.Color.FromArgb(29, 29, 29), dark, "parsed page background color");
+        AssertEqual(false, WebViewPageBridge.TryParseBackgroundMessage("wrs-bg:red", out _), "invalid page background message");
+        AssertEqual(false, WebViewPageBridge.TryParseBackgroundMessage("other:#ffffff", out _), "untrusted page message");
     }
 
     private static void TestResizableWindowStyle()

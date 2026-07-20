@@ -15,6 +15,9 @@ WeRead Stealth 是一个 Windows 专用的轻量网页容器。它只负责窗�
 | `AppSettings.cs` | 可持久化设置模型、默认值和范围归一化 |
 | `SettingsStore.cs` | JSON 加载、损坏恢复和原子替换保存 |
 | `UiTheme.cs` | 浅色与深色原生控件配色 |
+| `ToolbarVisibilityPolicy.cs` | 顶边唤出、停留与延迟隐藏规则 |
+| `WebViewEnvironment.cs` | WebView2 浏览器参数与滚动条策略 |
+| `WebViewPageBridge.cs` | 严格校验页面背景色消息，驱动滚动条遮罩配色 |
 
 ## 进程与数据流
 

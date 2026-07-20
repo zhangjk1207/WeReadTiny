@@ -6,6 +6,7 @@ namespace WeReadStealth
     [DataContract]
     public sealed class AppSettings
     {
+        public const int CurrentVersion = 2;
         public const int MinimumWidth = 300;
         public const int MinimumHeight = 400;
 
@@ -30,6 +31,12 @@ namespace WeReadStealth
         [DataMember(Order = 7)]
         public string Theme { get; set; }
 
+        [DataMember(Order = 8)]
+        public int Version { get; set; }
+
+        [DataMember(Order = 9)]
+        public bool AutoHideToolbar { get; set; }
+
         public static AppSettings CreateDefault()
         {
             return new AppSettings
@@ -38,12 +45,20 @@ namespace WeReadStealth
                 Height = 600,
                 Opacity = 1.0,
                 AlwaysOnTop = true,
-                Theme = "light"
+                Theme = "light",
+                Version = CurrentVersion,
+                AutoHideToolbar = true
             };
         }
 
         public void Normalize()
         {
+            if (Version < CurrentVersion)
+            {
+                AutoHideToolbar = true;
+            }
+
+            Version = CurrentVersion;
             Width = Math.Max(MinimumWidth, Width);
             Height = Math.Max(MinimumHeight, Height);
             Opacity = Math.Max(0.3, Math.Min(1.0, Opacity));
@@ -68,7 +83,9 @@ namespace WeReadStealth
                 Height = Height,
                 Opacity = Opacity,
                 AlwaysOnTop = AlwaysOnTop,
-                Theme = Theme
+                Theme = Theme,
+                Version = Version,
+                AutoHideToolbar = AutoHideToolbar
             };
         }
     }

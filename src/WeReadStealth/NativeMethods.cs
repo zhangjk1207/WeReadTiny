@@ -25,6 +25,10 @@ namespace WeReadStealth
         internal const uint ModShift = 0x0004;
         internal const uint ModNoRepeat = 0x4000;
 
+        internal const int DwmwaUseImmersiveDarkMode = 20;
+        internal const int DwmwaBorderColor = 34;
+        internal const int DwmColorNone = unchecked((int)0xFFFFFFFE);
+
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool RegisterHotKey(IntPtr windowHandle, int id, uint modifiers, uint virtualKey);
@@ -47,6 +51,9 @@ namespace WeReadStealth
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool DestroyIcon(IntPtr iconHandle);
+
+        [DllImport("dwmapi.dll")]
+        internal static extern int DwmSetWindowAttribute(IntPtr windowHandle, int attribute, ref int value, int valueSize);
     }
 
     internal static class WindowStyles
