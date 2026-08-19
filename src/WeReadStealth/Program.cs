@@ -63,7 +63,7 @@ namespace WeReadStealth
                 {
                     MessageBox.Show(
                         "应用启动失败。\r\n\r\n" + exception.Message,
-                        "WeRead Stealth",
+                        "WeReadTiny",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error);
                 }

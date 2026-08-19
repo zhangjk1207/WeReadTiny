@@ -49,7 +49,7 @@ namespace WeReadStealth
             _settingsStore = settingsStore ?? throw new ArgumentNullException(nameof(settingsStore));
             _settings = _settingsStore.Load();
 
-            Text = "WeRead Stealth";
+            Text = "WeReadTiny";
             FormBorderStyle = FormBorderStyle.None;
             MinimumSize = new Size(AppSettings.MinimumWidth, AppSettings.MinimumHeight);
             StartPosition = FormStartPosition.Manual;
@@ -198,7 +198,7 @@ namespace WeReadStealth
             _trayMenu = new ContextMenuStrip();
             _trayIcon = new NotifyIcon
             {
-                Text = "WeRead Stealth",
+                Text = "WeReadTiny",
                 Icon = _applicationIcon ?? SystemIcons.Application,
                 Visible = true,
                 ContextMenuStrip = _trayMenu

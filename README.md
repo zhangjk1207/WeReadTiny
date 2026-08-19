@@ -1,4 +1,4 @@
-# WeRead Stealth
+# WeReadTiny
 
 一个轻量、非官方的微信读书 Windows 第三方客户端。通过紧凑、置顶、透明度可调的小窗口，方便随时打开阅读。使用 WinForms 和系统 WebView2 Runtime 构建。
 
