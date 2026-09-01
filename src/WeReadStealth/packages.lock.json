@@ -13,9 +13,9 @@
       },
       "Microsoft.Web.WebView2": {
         "type": "Direct",
-        "requested": "[1.0.4078.44, )",
-        "resolved": "1.0.4078.44",
-        "contentHash": "TQkHa/aOHUqFHnJIJ/2ZmJ4nLcQJi0Pc0rj9BAs7SP5sT/KtVtb8jFp9uqQL6cKzCRSrwjS/wEPA43NWUOzU+A=="
+        "requested": "[1.0.4191.47, )",
+        "resolved": "1.0.4191.47",
+        "contentHash": "Snb6mlTpuz6ZFjWMwIdg28Xp6kAUMy3zaLUyGbFSaw+/AJKlwoX8EiaWJ1eUMfKyJHksPkFjJHl1LIB7kX+0AQ=="
       },
       "Microsoft.NETFramework.ReferenceAssemblies.net48": {
         "type": "Transitive",
@@ -26,9 +26,9 @@
     ".NETFramework,Version=v4.8/win-x64": {
       "Microsoft.Web.WebView2": {
         "type": "Direct",
-        "requested": "[1.0.4078.44, )",
-        "resolved": "1.0.4078.44",
-        "contentHash": "TQkHa/aOHUqFHnJIJ/2ZmJ4nLcQJi0Pc0rj9BAs7SP5sT/KtVtb8jFp9uqQL6cKzCRSrwjS/wEPA43NWUOzU+A=="
+        "requested": "[1.0.4191.47, )",
+        "resolved": "1.0.4191.47",
+        "contentHash": "Snb6mlTpuz6ZFjWMwIdg28Xp6kAUMy3zaLUyGbFSaw+/AJKlwoX8EiaWJ1eUMfKyJHksPkFjJHl1LIB7kX+0AQ=="
       }
     }
   }
